@@ -164,6 +164,34 @@ contract UniswapV3PoolTest is Test {
         pool.mint(address(this), params.lowerTick, params.upperTick, params.liquidity);
     }
 
+    function testInsuficientInputAmount() public {
+      bytes memory encoded = abi.encodeWithSignature("InsufficientInputAmount()");
+
+
+       TestCaseParams memory params = TestCaseParams({
+            wethBalance: 0,
+            usdcBalance: 0,
+            currentTick: 85176,
+            lowerTick: 84222,
+            upperTick: 86129,
+            liquidity: 1517882343751509868544,
+            currentSqrtP: 5602277097478614198912276234240,
+            shouldTransferInCallback: false,
+            mintLiqudity: false
+        });
+        
+        setupTestCase(params);
+
+        vm.expectRevert(encoded);
+
+        pool.mint(
+          address(this),
+          params.lowerTick,
+          params.upperTick,
+          params.liquidity
+        );
+    }
+
     function setupTestCase(TestCaseParams memory params)
         internal
         returns (uint256 poolBalance0, uint256 poolBalance1)
@@ -191,6 +219,7 @@ contract UniswapV3PoolTest is Test {
     }
 
     function uniswapV3MintCallback(uint256 amount0, uint256 amount1) public {
+        console.log("callback", msg.sender, amount0, amount1);
         token0.transfer(msg.sender, amount0);
         token1.transfer(msg.sender, amount1);
     }

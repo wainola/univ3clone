@@ -57,7 +57,6 @@ contract UniswapV3Pool {
         external
         returns (uint256 amount0, uint256 amount1)
     {
-        console.logBool(r);
         if (lowerTick >= upperTick || lowerTick < MIN_TICK || upperTick > MAX_TICK) revert InvalidTickRange();
 
         if (amount == 0) revert ZeroLiquidity();
@@ -79,9 +78,18 @@ contract UniswapV3Pool {
 
         if (amount0 > 0) balance0Before = balance0();
         if (amount1 > 0) balance1Before = balance1();
+        
+        console.log(amount0, balance0Before);
+        console.log(balance0());
+        console.log(address(this), owner);
+        console.log(msg.sender);
+        console.logBool(amount0 > 0 && balance0Before + amount0 > balance0());
+        console.log("balance total", amount0 + balance0Before);
+        console.log("balance 0", balance0());
 
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1);
-
+        console.log("after callback");
+      
         if (amount0 > 0 && balance0Before + amount0 > balance0()) revert InsufficientInputAmount();
 
         if (amount1 > 0 && balance1Before + amount1 > balance1()) revert InsufficientInputAmount();
