@@ -3,6 +3,7 @@ pragma solidity ^0.8.14;
 
 import "./interfaces/IERC20.sol";
 import "./interfaces/IUniswapV3MintCallback.sol";
+import "forge-std/console.sol";
 
 import "./lib/Tick.sol";
 import "./lib/Position.sol";
@@ -56,6 +57,7 @@ contract UniswapV3Pool {
         external
         returns (uint256 amount0, uint256 amount1)
     {
+        console.logBool(r);
         if (lowerTick >= upperTick || lowerTick < MIN_TICK || upperTick > MAX_TICK) revert InvalidTickRange();
 
         if (amount == 0) revert ZeroLiquidity();
