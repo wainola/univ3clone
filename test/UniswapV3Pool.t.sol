@@ -2,13 +2,14 @@
 pragma solidity ^0.8.14;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import "./ERC20Mintable.sol";
 import "../src/UniswapV3Pool.sol";
 
 contract UniswapV3PoolTest is Test {
     ERC20Mintable token0;
     ERC20Mintable token1;
-    UniswapV3Pool poo;
+    UniswapV3Pool pool;
     bool shouldTransferInCallback = false;
 
     struct TestCaseParams {
@@ -32,23 +33,25 @@ contract UniswapV3PoolTest is Test {
         assertTrue(true);
     }
 
-    function TestMintSuccess() public {
+    function testMintSuccess() public {
       TestCaseParams memory params = TestCaseParams({
         wethBalance: 1 ether,
         usdcBalance: 5000 ether,
         currentTick: 85176,
-        lowertick: 84222,
+        lowerTick: 84222,
         upperTick: 86129,
         liquidity: 1517882343751509868544,
         currentSqrtP: 5602277097478614198912276234240,
         shouldTransferInCallback: true,
         mintLiqudity: true
-      })
+      });
 
       (uint256 poolBalance0, uint256 poolBalance1) = setupTestCase(params);
 
       uint256 expectedAmount0 = 0.99897661834742528 ether;
       uint256 expectedAmount1 = 5000 ether;
+
+      console.log("token 0 balance", token0.balanceOf(address(pool)));
 
       assertEq(
         poolBalance0,
@@ -64,11 +67,57 @@ contract UniswapV3PoolTest is Test {
 
       assertEq(
         token0.balanceOf(address(pool)), expectedAmount0
-      )
+      );
+
 
       assertEq(
-        token1.balaceOf(address(pool)), expectedAmount1
-      )
+        token1.balanceOf(address(pool)), expectedAmount1
+      );
+
+      bytes32 positionKey = keccak256(
+        abi.encodePacked(address(this), params.lowerTick, params.upperTick)
+      );
+
+      uint128 posLiquidity = pool.positions(positionKey);
+      console.log("position liquidity", posLiquidity);
+      
+      assertEq(
+        posLiquidity, params.liquidity
+      );
+
+      (bool tickInitialized, uint128 tickLiquidity) = pool.ticks(
+        params.lowerTick
+      );
+
+      assertTrue(tickInitialized);
+      assertEq(
+        tickLiquidity, params.liquidity
+      );
+
+      (tickInitialized, tickLiquidity) = pool.ticks(params.upperTick);
+
+      assertTrue(tickInitialized);
+      assertEq(
+        tickLiquidity, params.liquidity
+      );
+
+      (uint160 sqrtPriceX96, int24 tick) = pool.slot0();
+
+      assertEq(
+        sqrtPriceX96,
+        5602277097478614198912276234240,
+        "invalid current sqrtP"
+      );
+
+      assertEq(
+        tick, 85176, "invalid current tick"
+      );
+
+      assertEq(
+        pool.liquidity(),
+        1517882343751509868544,
+        "invalid current liquidity"
+      );
     }
 
     function setupTestCase(TestCaseParams memory params) internal returns (
@@ -76,6 +125,7 @@ contract UniswapV3PoolTest is Test {
     ) {
       token0.mint(address(this), params.wethBalance);
       token1.mint(address(this), params.usdcBalance);
+
 
       pool = new UniswapV3Pool(
         address(token0),
@@ -90,7 +140,7 @@ contract UniswapV3PoolTest is Test {
           params.lowerTick,
           params.upperTick,
           params.liquidity
-        )
+        );
       }
 
       shouldTransferInCallback = params.shouldTransferInCallback;
